@@ -204,8 +204,8 @@ int main() {
   // Start lane
   int lane = 1;
 
-  //Reference Velocity (below max speed [MPH])
-  double ref_vel = 49;
+  //Reference Velocity (below max speed [m/s])
+  double ref_vel = 22; // Aprox 49.2 MPH
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy, &lane, &ref_vel](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -267,9 +267,9 @@ int main() {
               double prev_car_y = car_y - sin(car_yaw);
 
               ptsx.push_back(prev_car_x);
-              ptsx.push_back(car_x);
-
               ptsy.push_back(prev_car_y);
+
+              ptsx.push_back(car_x);
               ptsy.push_back(car_y);
 
               cout << "Pushing back: " << prev_car_x << "\t" << prev_car_y << endl;
@@ -288,9 +288,9 @@ int main() {
               ref_yaw = atan2(ref_y - ref_y_prev, ref_x - ref_x_prev);
 
               ptsx.push_back(ref_x_prev);
-              ptsx.push_back(ref_x);
-
               ptsy.push_back(ref_y_prev);
+
+              ptsx.push_back(ref_x);
               ptsy.push_back(ref_y);
 
               cout << "Pushing back: " << ref_x_prev << "\t" << ref_y_prev << endl;
@@ -357,7 +357,7 @@ int main() {
             // Fill the rest until 50 points are met
             for (int i = 1; i <= 50 -previous_path_x.size(); i++)
             {
-              double N = target_distance/(0.02*ref_vel/2.24); //This is meters per second
+              double N = target_distance/(0.02*ref_vel); //This is meters per second
               double x_point = x_add_on+(target_x)/N;
               double y_point = s(x_point);
               //Replace current x starting point
