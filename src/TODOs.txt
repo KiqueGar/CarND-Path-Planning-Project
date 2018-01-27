@@ -1,0 +1,14 @@
+TODO's:
+
+- Check logic on front collision (line 291)
+- Enable lane changing
+	- Check for vehicles behind me (line 270)
+- Speed controller (line 284), currently changing arbitrarily
+
+
+
+DONE
+
+- Disable cold start
+- not use MPH, use m/s
+- Change path planning points (50) << UNCHANGED, 50 points ahead is 1 second

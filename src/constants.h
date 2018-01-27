@@ -2,7 +2,7 @@
 #define CONSTANTS
 
 
-#define MAX_SPEED = 22	//22m/s ~ 49.2MPH
+#define MAX_SPEED 22	//22m/s ~ 49.2MPH
 // Maximum acceleration, from https://en.wikipedia.org/wiki/Nissan_Sentra
 #define MAX_ACCEL 4	// 0-60MPH in 6.7 seconds = 4m/s^2
 

@@ -205,9 +205,9 @@ int main() {
 
   // Start lane
   int lane = 1;
-
   //Reference Velocity (below max speed [m/s])
-  double ref_vel = 22; // Aprox 49.2 MPH
+  double ref_vel= 0;
+
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy, &lane, &ref_vel](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -234,6 +234,7 @@ int main() {
           	double car_d = j[1]["d"];
           	double car_yaw = j[1]["yaw"];
           	double car_speed = j[1]["speed"];
+            car_speed /= 2.237; // Convert self speed to m/s
 
           	// Previous path data given to the Planner
           	auto previous_path_x = j[1]["previous_path_x"];
@@ -245,12 +246,80 @@ int main() {
           	// Sensor Fusion Data, a list of all other cars on the same side of the road.
           	auto sensor_fusion = j[1]["sensor_fusion"];
 
-            
-
-
-          	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
             // Capture previous path points (size)
             int prev_size = previous_path_x.size();
+
+
+            //TODO: Collition avoidance
+            bool change_lanes = false;
+            
+            if(prev_size>0)
+            {
+              car_s = end_path_s;
+            }
+            
+            bool too_close = false;
+            bool follow_speed = false;
+
+            for (int i=0; i< sensor_fusion.size(); i++)
+            {
+              //Check car in same lane as me
+              float d = sensor_fusion[i][6];
+              if (d < (2+4*lane+2) && d > (2+4*lane-2))
+              {
+                // Read telemetry for another car
+                double vx = sensor_fusion[i][3];  //Speed is already in m/s
+                double vy = sensor_fusion[i][4];
+                double other_car_s = sensor_fusion[i][5];
+                double other_car_speed = sqrt((vx*vx)+(vy*vy));
+                // Update for possible location
+                other_car_s += ((double)prev_size*0.02*other_car_speed);
+
+                double s_gap = other_car_s - car_s;
+                // Check s values greater than mine and S gap
+                if((other_car_s > car_s) && (s_gap) < SKID_LENGHT)
+                {
+                  cout << "Car detected!" << endl;
+                  cout << "Speed: " << car_speed << endl;
+                  cout << "Another speed: " << other_car_speed << endl;
+                  cout << "S: " << car_s << "\t" << "Another car S: " << other_car_s << endl;
+                  cout << "GAP: " << s_gap << endl;
+                  // Calculate safe distance to be behind
+                  double skid_to_other = pow(other_car_speed - car_speed, 2)/ 2*0.1*MAX_DEACCEL;
+                  cout << "New SKID: " << skid_to_other << endl;
+                  
+                  if (s_gap > 10)
+                  {
+                    cout << "\t Car is still far, following speed" << endl;
+                    //Match front vehicle speed
+                    follow_speed = true;
+                    ref_vel= other_car_speed; // Vehicle speed comes in MPH
+                  }
+                  else
+                  {
+                    too_close = true;
+                  }
+                  
+                }
+                
+                if (too_close)
+                {
+                  // Slow down speed
+                  cout << "\t Car is too close! breaking" << endl;
+                  ref_vel = ref_vel - 0.1*MAX_DEACCEL*0.02;
+                  cout << "\t \t New speed: " << ref_vel << endl;
+                }
+                else if(ref_vel < MAX_SPEED and not follow_speed)
+                {
+                  ref_vel += 0.3*MAX_ACCEL*0.02;
+                }
+
+              }
+            }
+
+            //END TODO: Collition avoidance
+
+          	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
             // A list of widelyspaced (x,y) waypoints 30m appart
             vector<double> ptsx;
             vector<double> ptsy;
@@ -260,7 +329,7 @@ int main() {
             double ref_y = car_y;
             double ref_yaw = deg2rad(car_yaw);
 
-            cout << "References Global: " << ref_x << "\t" << ref_y << endl;
+            //cout << "References Global: " << ref_x << "\t" << ref_y << endl;
 
             // If previous size is almost empty, use car as starting reference
             if(prev_size<2)
@@ -274,8 +343,8 @@ int main() {
               ptsx.push_back(car_x);
               ptsy.push_back(car_y);
 
-              cout << "Pushing back: " << prev_car_x << "\t" << prev_car_y << endl;
-              cout << "Pushing back: " << car_x << "\t" << car_y << endl;
+              //cout << "Pushing back: " << prev_car_x << "\t" << prev_car_y << endl;
+              //cout << "Pushing back: " << car_x << "\t" << car_y << endl;
             }
             //Else, use 2 previous points, orientation relative to last point
             else
@@ -295,8 +364,8 @@ int main() {
               ptsx.push_back(ref_x);
               ptsy.push_back(ref_y);
 
-              cout << "Pushing back: " << ref_x_prev << "\t" << ref_y_prev << endl;
-              cout << "Pushing back: " << ref_x << "\t" << ref_y << endl;
+              //cout << "Pushing back: " << ref_x_prev << "\t" << ref_y_prev << endl;
+              //cout << "Pushing back: " << ref_x << "\t" << ref_y << endl;
               
             }
 
@@ -313,11 +382,11 @@ int main() {
             ptsy.push_back(next_wp1[1]);
             ptsy.push_back(next_wp2[1]);
 
-            cout << "Pushing back evenly: " << next_wp0[0] << "\t" << next_wp0[1] << endl;
-            cout << "Pushing back evenly: " << next_wp1[0] << "\t" << next_wp1[1] << endl;
-            cout << "Pushing back evenly: " << next_wp2[0] << "\t" << next_wp2[1] << endl;
+            //cout << "Pushing back evenly: " << next_wp0[0] << "\t" << next_wp0[1] << endl;
+            //cout << "Pushing back evenly: " << next_wp1[0] << "\t" << next_wp1[1] << endl;
+            //cout << "Pushing back evenly: " << next_wp2[0] << "\t" << next_wp2[1] << endl;
 
-            cout << "Shifting reference frame:" << endl;
+            //cout << "Shifting reference frame:" << endl;
             //Shift to car reference frame
             for (int i = 0; i < ptsx.size(); i++)
             {
@@ -327,7 +396,7 @@ int main() {
               ptsx[i] = (shift_x * cos(0 - ref_yaw) - shift_y * sin(0 - ref_yaw));
               ptsy[i] = (shift_x * sin(0 - ref_yaw) + shift_y * cos(0 - ref_yaw));
 
-              cout << "\t" << ptsx[i] << "\t" << ptsy[i] << endl;
+              //cout << "\t" << ptsx[i] << "\t" << ptsy[i] << endl;
             }
 
             // Create a spline s
@@ -378,6 +447,8 @@ int main() {
               next_x_vals.push_back(x_point);
               next_y_vals.push_back(y_point);
             }
+
+            // END TODO: define a path..
             json msgJson;
           	msgJson["next_x"] = next_x_vals;
           	msgJson["next_y"] = next_y_vals;
