@@ -206,7 +206,7 @@ int main() {
   // Start lane
   int lane = 1;
   //Reference Velocity (below max speed [m/s])
-  double ref_vel= 0;
+  double ref_vel= 0.01;
 
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,&map_waypoints_dx,&map_waypoints_dy, &lane, &ref_vel](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                      uWS::OpCode opCode) {
@@ -259,7 +259,7 @@ int main() {
             }
             
             bool too_close = false;
-            bool follow_speed = false;
+            bool changed_speed = false;
 
             for (int i=0; i< sensor_fusion.size(); i++)
             {
@@ -277,31 +277,50 @@ int main() {
 
                 double s_gap = other_car_s - car_s;
                 // Check s values greater than mine and S gap
-                if((other_car_s > car_s) && (s_gap) < SKID_LENGHT)
+                if((other_car_s > car_s) && (s_gap) < 1.2 * SKID_LENGHT)
                 {
-                  cout << "Car detected!" << endl;
-                  cout << "Speed: " << car_speed << endl;
-                  cout << "Another speed: " << other_car_speed << endl;
+                  cout << "Following a Car!" << endl;
+                  cout << "Speed: " << car_speed << "\t" << "Another speed: " << other_car_speed << endl;
                   cout << "S: " << car_s << "\t" << "Another car S: " << other_car_s << endl;
-                  cout << "GAP: " << s_gap << endl;
-                  // Calculate safe distance to be behind
-                  double skid_to_other = pow(other_car_speed - car_speed, 2)/ 2*0.1*MAX_DEACCEL;
-                  cout << "New SKID: " << skid_to_other << endl;
-                  
-                  if (s_gap > 10)
+                  cout << "GAP: " << s_gap << "\t" << "Skid: " << pow(car_speed,2)/(0.7*9.81) << endl;
+                  //If somewhat far, slow down a bit, except if already slower than front car
+                  if (s_gap > SAFE_DISTANCE && car_speed > other_car_speed - .5)
                   {
-                    cout << "\t Car is still far, following speed" << endl;
-                    //Match front vehicle speed
-                    follow_speed = true;
-                    ref_vel= other_car_speed; // Vehicle speed comes in MPH
+                    cout << "\t Car is still far, trying to follow" << endl;
+                    ref_vel -= 0.3*MAX_DEACCEL*.02; // Slow down a bit
+                    changed_speed = true;
                   }
-                  else
+
+                  // If following the vehicle way too close, 
+                  if (s_gap < SAFE_DISTANCE)
                   {
+                    // Break more energically
+                    cout << "\t Car is close!! Breaking!!" << endl;
                     too_close = true;
+                    ref_vel -= 0.6*MAX_DEACCEL*.02;
+                    changed_speed = true;
+                  }
+                  if(s_gap < 15) 
+                  {
+                    cout << "\t WAY TOO CLOSE!! HARD BREAKING!!" << endl;
+                    cout << "\t WAY TOO CLOSE!! HARD BREAKING!!" << endl;
+                    cout << "\t WAY TOO CLOSE!! HARD BREAKING!!" << endl;
+                    cout << "\t WAY TOO CLOSE!! HARD BREAKING!!" << endl;
+                    ref_vel -= 0.4*MAX_DEACCEL*0.02;
                   }
                   
                 }
-                
+
+                if (not changed_speed)
+                {
+                  if(ref_vel < MAX_SPEED)
+                  {
+                    //cout << ref_vel << endl;
+                    ref_vel += 0.3*MAX_ACCEL*0.02;
+                  }
+                }
+                /*
+
                 if (too_close)
                 {
                   // Slow down speed
@@ -313,6 +332,7 @@ int main() {
                 {
                   ref_vel += 0.3*MAX_ACCEL*0.02;
                 }
+                */
 
               }
             }
