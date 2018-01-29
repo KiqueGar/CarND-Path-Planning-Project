@@ -277,7 +277,7 @@ int main() {
 
                 double s_gap = other_car_s - car_s;
                 // Check s values greater than mine and S gap
-                if((other_car_s > car_s) && (s_gap) < 1.2 * SKID_LENGHT)
+                if((other_car_s > car_s) && (s_gap) <  SKID_LENGHT)
                 {
                   cout << "Following a Car!" << endl;
                   cout << "Speed: " << car_speed << "\t" << "Another speed: " << other_car_speed << endl;
@@ -287,8 +287,10 @@ int main() {
                   if (s_gap > SAFE_DISTANCE && car_speed > other_car_speed - .5)
                   {
                     cout << "\t Car is still far, trying to follow" << endl;
-                    ref_vel -= 0.3*MAX_DEACCEL*.02; // Slow down a bit
+                    ref_vel -= 0.2*MAX_DEACCEL*.02; // Slow down a bit
                     changed_speed = true;
+                    //Attempt to change lanes
+                    change_lanes = true;
                   }
 
                   // If following the vehicle way too close, 
@@ -299,6 +301,8 @@ int main() {
                     too_close = true;
                     ref_vel -= 0.6*MAX_DEACCEL*.02;
                     changed_speed = true;
+                    //Attempt to change lanes
+                    change_lanes = true;
                   }
                   if(s_gap < 15) 
                   {
@@ -319,25 +323,83 @@ int main() {
                     ref_vel += 0.3*MAX_ACCEL*0.02;
                   }
                 }
-                /*
-
-                if (too_close)
-                {
-                  // Slow down speed
-                  cout << "\t Car is too close! breaking" << endl;
-                  ref_vel = ref_vel - 0.1*MAX_DEACCEL*0.02;
-                  cout << "\t \t New speed: " << ref_vel << endl;
-                }
-                else if(ref_vel < MAX_SPEED and not follow_speed)
-                {
-                  ref_vel += 0.3*MAX_ACCEL*0.02;
-                }
-                */
-
               }
             }
 
             //END TODO: Collition avoidance
+
+            //TODO: Lane changing
+
+            if (change_lanes)
+            {
+              cout << "\t\tTrying to change lanes..." << endl;
+              bool changed_lanes = false;
+              // Try the left lane
+              if (lane != 0 && !changed_lanes)
+              {
+                //Check if lane is safe for changes
+                bool lane_safe = true;
+                for (int i = 0; i < sensor_fusion.size(); ++i)
+                {
+                  // Check for cars in left lanes
+                  float d = sensor_fusion[i][6];
+                  if (d < (2 + 4 * (lane -1) +2) && d > (2 + 4 * (lane -1) -2))
+                  {
+                    double vx = sensor_fusion[i][3];
+                    double vy = sensor_fusion[i][4];
+                    double other_car_s = sensor_fusion[i][5];
+                    double other_car_speed = sqrt(vx*vx + vy*vy);
+                    // Update for possible location
+                    other_car_s += ((double)prev_size*0.02*other_car_speed);
+                    double s_gap_lane_change = other_car_s - car_s;
+                    // Check if there is a big enough gap
+                    if (s_gap_lane_change < SAFE_DISTANCE_LANE_CHANGE && s_gap_lane_change > SAFE_DISTANCE_LANE_CHANGE)
+                    {
+                      lane_safe = false;
+                      cout << "\t\t\tNo safe gap to do so [LEFT]" << endl;
+                    }
+                  }
+                }
+                if (lane_safe)
+                {
+                  changed_lanes = true;
+                  lane -= 1;
+                }
+              }
+              // Try to change lane to the right
+              if (lane != 2 && !changed_lanes)
+              {
+                bool lane_safe = true;
+                for (int i = 0; i < sensor_fusion.size(); ++i)
+                {
+                  // check for cars in destination lane
+                  float d = sensor_fusion[i][6];
+                  if (d < (2 + 4*(lane +1) +2) && d > (2 + 4*(lane -1) -2))
+                  {
+                    double vx = sensor_fusion[i][3];
+                    double vy = sensor_fusion[i][4];
+                    double other_car_s = sensor_fusion[i][5];
+                    double other_car_speed = sqrt(vx*vx + vy*vy);
+                    // Update for possible location
+                    other_car_s += ((double)prev_size*0.02*other_car_speed);
+                    double s_gap_lane_change = other_car_s - car_s;
+                    // Check if there is a big enough gap
+                    if (s_gap_lane_change < SAFE_DISTANCE_LANE_CHANGE && s_gap_lane_change > SAFE_DISTANCE_LANE_CHANGE)
+                    {
+                      lane_safe = false;
+                      cout << "\t\t\tNo safe gap to do so [RIGHT]" << endl;
+                    }
+                  }
+                }
+                if (lane_safe)
+                {
+                  changed_lanes = true;
+                  lane += 1;
+                }
+              }
+            }
+
+            // END TODO: Lane changing
 
           	// TODO: define a path made up of (x,y) points that the car will visit sequentially every .02 seconds
             // A list of widelyspaced (x,y) waypoints 30m appart
