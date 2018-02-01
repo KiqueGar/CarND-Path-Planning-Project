@@ -16,6 +16,8 @@
 // Smallest distance to attempt a lane change
 #define SAFE_DISTANCE_LANE_CHANGE SAFE_DISTANCE + 20
 //Smallest frontal clearance (from obstructing car) to do a lane change
-#define WORTH_CHANGE_DISTANCE 50
+#define WORTH_CHANGE_DISTANCE 40
+// Smallest backward distance to attempt lane change
+#define SAFE_BACK_DISTANCE 0.65* SAFE_DISTANCE
 
 #endif
