@@ -1,12 +1,16 @@
 TODO's:
-- Check only the closest car in current lane
-- Evaluate if proposed lane for change has gap bigger than the previous gap
+
+
+
 
 DONE
+- Check for vehicles behind and in front of me (line 365)
+- Evaluate if proposed lane has gap bigger than the previous gap (frontal)
+- Evaluate if backward gap is safe for change
+- Check only the closest car in current lane
 - Speed controller (line 284), currently changing arbitrarily
 - Check logic on front collision (line 291)
 - Disable cold start
 - not use MPH, use m/s
 - Change path planning points (50) << UNCHANGED, 50 points ahead is 1 second
 - Enable lane changing
-	- Check for vehicles behind me (line 270)
