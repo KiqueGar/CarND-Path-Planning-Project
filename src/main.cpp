@@ -345,6 +345,7 @@ int main() {
             //TODO: Lane changing
             float closest_car_s_changed_lane = 1000;
             float back_gap_change_lane = -10000;
+
             if (change_lanes)
             {
               cout << "\t\tTrying to change lanes..." << endl;
@@ -403,8 +404,69 @@ int main() {
                   lane -= 1;
                 }
               }
-              /*
+              
               // Try to change lane to the right
+              //Reset gaps for new lane
+              closest_car_s_changed_lane = 1000;
+              back_gap_change_lane = -10000;
+
+              if (lane != 2 && !changed_lanes)
+              {
+                //Check if lane is safe for changes
+                bool lane_safe = true;
+                for (int i = 0; i < sensor_fusion.size(); ++i)
+                {
+                  // Check for cars in left lanes
+                  float d = sensor_fusion[i][6];
+                  if (d < (2 + 4 * (lane +1) +2) && d > (2 + 4 * (lane +1) -2))
+                  {
+                    double vx = sensor_fusion[i][3];
+                    double vy = sensor_fusion[i][4];
+                    double other_car_s = sensor_fusion[i][5];
+                    double other_car_speed = sqrt(vx*vx + vy*vy);
+                    // Update for possible location
+                    other_car_s += ((double)prev_size*0.02*other_car_speed);
+                    double s_gap_lane_change = other_car_s - car_s;
+                    if (s_gap_lane_change >0)
+                    {
+                      if (s_gap_lane_change < closest_car_s_changed_lane)
+                      {
+                        closest_car_s_changed_lane = s_gap_lane_change;
+                      }
+                    }
+                    else
+                    {
+                      if (s_gap_lane_change > back_gap_change_lane)
+                      {
+                        back_gap_change_lane = s_gap_lane_change;
+                      }
+                    }
+                    
+                    //closest_car_s_changed_lane = fabs(closest_car_s_changed_lane);
+                    // Check if there is a big enough gap, front and back
+                    // Check if there is a distance worth to change lane
+                    if (closest_car_s_changed_lane < SAFE_DISTANCE_LANE_CHANGE ||
+                    closest_car_s_changed_lane < closest_car_s + WORTH_CHANGE_DISTANCE || 
+                    back_gap_change_lane > -0.75* SAFE_DISTANCE)
+                    {
+                      lane_safe = false;
+                    }
+                  }
+                }
+                if (lane_safe)
+                {
+                  cout << "\t\t\tChanged lane" << endl;
+                  cout << "\t\t\tFrontal Gap in RIGHT changed lane:\t" << closest_car_s_changed_lane << endl;
+                  cout << "\t\t\tBackwards Gap in RIGHT changed lane:\t" << back_gap_change_lane << endl;
+                  changed_lanes = true;
+                  lane += 1;
+                }
+              }
+
+
+
+
+              /*
               if (lane != 2 && !changed_lanes)
               {
                 bool lane_safe = true;

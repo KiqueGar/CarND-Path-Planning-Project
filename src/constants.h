@@ -8,6 +8,7 @@
 
 // Maximum deacceleration, from https://en.wikipedia.org/wiki/Braking_distance
 #define MAX_DEACCEL 6.8	//	0.7*9.81m/s*s
+// Minimum distance to full stop
 #define SKID_LENGHT MAX_SPEED*MAX_SPEED/(0.7*9.81)	//	~70m Full stop going at 22m/s
 
 //Smallest acceptable distance to front car
